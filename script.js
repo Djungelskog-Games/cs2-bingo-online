@@ -13,7 +13,9 @@ const translations = {
         free_space: "FREE",
         custom_challenges_info: "Desafios Customizados (Apenas ao Criar Lobby):",
         upload_file: "Carregar Ficheiro .txt",
-        squares_occupied: "QUADRADOS OCUPADOS"
+        squares_occupied: "QUADRADOS OCUPADOS",
+        lobby_closed: "O dono do lobby saiu. O lobby foi fechado.",
+        leave_lobby: "Sair do Lobby"
     },
     en: {
         lobby_info: "Lobby Info",
@@ -26,7 +28,9 @@ const translations = {
         free_space: "FREE",
         custom_challenges_info: "Custom Challenges (Create Lobby Only):",
         upload_file: "Upload .txt File",
-        squares_occupied: "SQUARES OCCUPIED"
+        squares_occupied: "SQUARES OCCUPIED",
+        lobby_closed: "The lobby owner left. Lobby closed.",
+        leave_lobby: "Leave Lobby"
     }
 };
 
@@ -327,6 +331,16 @@ socket.on('errorMsg', (msg) => {
     lobbyError.style.display = 'block';
 });
 
+socket.on('lobbyClosed', () => {
+    lobbyOverlay.classList.add('active');
+    lobbyError.textContent = translations[currentLang].lobby_closed;
+    lobbyError.style.display = 'block';
+    
+    // Also reset win overlay if open
+    winOverlay.classList.remove('active');
+    stopConfetti();
+});
+
 // language controller
 function setLanguage(lang) {
     currentLang = lang;
@@ -375,6 +389,7 @@ window.addEventListener('DOMContentLoaded', () => {
     rerollBtn = document.getElementById('reroll-btn');
     customItemsInput = document.getElementById('custom-items-input');
     customFileLoader = document.getElementById('custom-file-loader');
+    leaveLobbyBtn = document.getElementById('leave-lobby-btn');
 
     // initialize canvas dimensions
     resizeCanvas();
@@ -430,6 +445,15 @@ window.addEventListener('DOMContentLoaded', () => {
 
     rerollBtn.addEventListener('click', () => {
         socket.emit('rerollLobby');
+    });
+
+    leaveLobbyBtn.addEventListener('click', () => {
+        socket.emit('leaveLobby');
+        lobbyOverlay.classList.add('active');
+        lobbyError.style.display = 'none'; // clear errors
+        // reset UI
+        winOverlay.classList.remove('active');
+        stopConfetti();
     });
 
     // language selector

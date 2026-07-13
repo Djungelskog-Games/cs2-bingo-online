@@ -163,19 +163,37 @@ io.on('connection', (socket) => {
         });
     });
 
-    socket.on('disconnect', () => {
+    function handleLeave(socket) {
         const lobbyId = socket.lobbyId;
         if (lobbyId && lobbies[lobbyId]) {
             const lobby = lobbies[lobbyId];
-            delete lobby.players[socket.id];
             
-            if (Object.keys(lobby.players).length === 0) {
-                // Delete empty lobby after some time or immediately
+            if (lobby.creatorId === socket.id) {
+                socket.to(lobbyId).emit('lobbyClosed');
                 delete lobbies[lobbyId];
             } else {
-                io.to(lobbyId).emit('playersUpdate', lobby.players);
+                delete lobby.players[socket.id];
+                
+                if (Object.keys(lobby.players).length === 0) {
+                    // Delete empty lobby after some time or immediately
+                    delete lobbies[lobbyId];
+                } else {
+                    io.to(lobbyId).emit('playersUpdate', lobby.players);
+                }
             }
         }
+        if (lobbyId) {
+            socket.leave(lobbyId);
+            socket.lobbyId = null;
+        }
+    }
+
+    socket.on('disconnect', () => {
+        handleLeave(socket);
+    });
+
+    socket.on('leaveLobby', () => {
+        handleLeave(socket);
     });
 
     function checkWinCondition(lobbyId, socketId) {
