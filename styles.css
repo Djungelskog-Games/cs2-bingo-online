@@ -506,7 +506,7 @@ textarea:focus {
     border-radius: 8px;
     border: 1px solid var(--border-color);
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-    z-index: 50;
+    z-index: 300;
 }
 
 .lang-btn {

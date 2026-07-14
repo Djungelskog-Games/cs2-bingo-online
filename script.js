@@ -20,9 +20,15 @@ const translations = {
         join_menu_btn: "Entrar num Lobby",
         create_menu_btn: "Criar Lobby",
         back_btn: "Voltar",
-        enable_sabotage: "Ativar Sabotagem / Enable Sabotage",
+        enable_sabotage: "Ativar Botão de Sabotagem",
         sabotage_space: "SABOTAGEM",
-        grid_size: "Tamanho / Size:"
+        grid_size: "Tamanho:",
+        player_name_placeholder: "Nome",
+        lobby_id_placeholder: "ID do Lobby",
+        custom_items_placeholder: "Escreve um desafio por linha, ou deixa vazio para os originais...",
+        lobby_id_title: "ID DO LOBBY:",
+        export_btn: "Exportar",
+        import_btn: "Importar"
     },
     en: {
         lobby_info: "Lobby Info",
@@ -42,9 +48,15 @@ const translations = {
         join_menu_btn: "Join a Lobby",
         create_menu_btn: "Create Lobby",
         back_btn: "Back",
-        enable_sabotage: "Enable Sabotage",
+        enable_sabotage: "Enable Sabotage Button",
         sabotage_space: "SABOTAGE",
-        grid_size: "Board Size:"
+        grid_size: "Size:",
+        player_name_placeholder: "Name",
+        lobby_id_placeholder: "Lobby ID",
+        custom_items_placeholder: "Write one challenge per line, or leave empty for defaults...",
+        lobby_id_title: "LOBBY ID:",
+        export_btn: "Export",
+        import_btn: "Import"
     }
 };
 
@@ -321,7 +333,7 @@ function updatePlayersList() {
         pEl.style.alignItems = 'center';
         pEl.style.justifyContent = 'space-between';
         pEl.style.margin = '5px 0';
-        
+
         const isMe = player.id === socket.id;
         const isCurrentPlayerHost = creatorId === socket.id;
         const showKick = isCurrentPlayerHost && !isMe;
@@ -352,7 +364,7 @@ function updatePlayersList() {
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
             const playerId = btn.getAttribute('data-player-id');
-            
+
             if (btn.classList.contains('confirming')) {
                 // Second click: emit kick event
                 socket.emit('kickPlayer', playerId);
@@ -361,7 +373,7 @@ function updatePlayersList() {
                 // First click: prompt inside button
                 btn.classList.add('confirming');
                 btn.textContent = 'Sure?';
-                
+
                 confirmTimeout = setTimeout(() => {
                     btn.classList.remove('confirming');
                     btn.textContent = 'Kick';
@@ -520,6 +532,14 @@ function setLanguage(lang) {
             } else {
                 el.textContent = translations[lang][key];
             }
+        }
+    });
+
+    // update placeholders
+    document.querySelectorAll('[data-translate-placeholder]').forEach(el => {
+        const key = el.getAttribute('data-translate-placeholder');
+        if (translations[lang][key]) {
+            el.placeholder = translations[lang][key];
         }
     });
 
@@ -690,7 +710,7 @@ window.addEventListener('DOMContentLoaded', () => {
         stateFileInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (!file) return;
-            
+
             const reader = new FileReader();
             reader.onload = (evt) => {
                 try {
@@ -701,7 +721,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 }
             };
             reader.readAsText(file);
-            
+
             e.target.value = ''; // Reset input
         });
     }

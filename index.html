@@ -33,7 +33,6 @@
             </div>
             <div id="board-counter"
                 style="margin-top: 15px; font-size: 1.2rem; color: var(--text-muted); font-family: var(--font-display); font-weight: 600; letter-spacing: 1px;">
-                0/48 SQUARES OCCUPIED
             </div>
         </div>
 
@@ -43,7 +42,7 @@
                 <h2 data-translate="lobby_info">Lobby Info</h2>
                 <div
                     style="background: var(--bg-darker); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color);">
-                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 5px;">ID DO LOBBY / LOBBY ID:
+                    <p data-translate="lobby_id_title" style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 5px;">ID DO LOBBY:
                     </p>
                     <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
                         <h3 id="current-lobby-id"
@@ -90,7 +89,7 @@
                         style="margin-right: 5px; vertical-align: middle;">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
                     </svg>
-                    <span>Export</span>
+                    <span data-translate="export_btn">Export</span>
                 </button>
                 <button class="btn btn-secondary" id="import-state-btn"
                     style="flex: 1; padding: 10px 5px; font-size: 0.9rem;" title="Import Lobby State">
@@ -99,7 +98,7 @@
                         style="margin-right: 5px; vertical-align: middle;">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" />
                     </svg>
-                    <span>Import</span>
+                    <span data-translate="import_btn">Import</span>
                 </button>
                 <input type="file" id="state-file-input" accept=".json" style="display: none;">
             </div>
@@ -132,9 +131,11 @@
             <div id="join-menu-section" style="display: none;">
                 <div class="win-title" style="font-size: 2rem; margin-bottom: 20px;" data-translate="join_lobby">Entrar
                     no Lobby</div>
-                <input type="text" id="join-player-name" placeholder="Nome / Name"
+                <input type="text" id="join-player-name" data-translate-placeholder="player_name_placeholder"
+                    placeholder="Nome / Name"
                     style="margin-bottom: 15px; width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-darker); color: var(--text-light); font-family: var(--font-body); font-size: 1rem; outline: none;">
-                <input type="text" id="lobby-id-input" placeholder="ID do Lobby / Lobby ID"
+                <input type="text" id="lobby-id-input" data-translate-placeholder="lobby_id_placeholder"
+                    placeholder="ID do Lobby / Lobby ID"
                     style="margin-bottom: 15px; width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-darker); color: var(--text-light); font-family: var(--font-body); font-size: 1rem; text-transform: uppercase; outline: none;">
 
                 <button class="btn" id="join-lobby-btn" style="width: 100%; margin-bottom: 10px;">
@@ -149,12 +150,13 @@
             <div id="create-menu-section" style="display: none;">
                 <div class="win-title" style="font-size: 2rem; margin-bottom: 15px;" data-translate="create_lobby">Criar
                     Novo Lobby</div>
-                <input type="text" id="create-player-name" placeholder="Nome / Name"
+                <input type="text" id="create-player-name" data-translate-placeholder="player_name_placeholder"
+                    placeholder="Nome / Name"
                     style="margin-bottom: 15px; width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-darker); color: var(--text-light); font-family: var(--font-body); font-size: 1rem; outline: none;">
 
                 <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 8px; text-align: left;"
                     data-translate="custom_challenges_info">Desafios Customizados:</p>
-                <textarea id="custom-items-input"
+                <textarea id="custom-items-input" data-translate-placeholder="custom_items_placeholder"
                     placeholder="Escreve um desafio por linha, ou deixa vazio para os originais..."
                     style="width: 100%; height: 80px; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-darker); color: var(--text-light); font-family: var(--font-body); font-size: 0.9rem; outline: none; resize: vertical; margin-bottom: 10px;"></textarea>
 
