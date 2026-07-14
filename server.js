@@ -134,6 +134,10 @@ io.on('connection', (socket) => {
             if (lobby.winner === existingPlayerId) {
                 lobby.winner = socket.id;
             }
+
+            if (lobby.creatorId === existingPlayerId) {
+                lobby.creatorId = socket.id;
+            }
         } else {
             const usedColors = Object.values(lobby.players).map(p => p.color);
             color = PLAYER_COLORS.find(c => !usedColors.includes(c));
@@ -147,20 +151,34 @@ io.on('connection', (socket) => {
         lobby.players[socket.id] = { id: socket.id, name: playerName, color: color };
         socket.lobbyId = lobbyId;
 
-        // Emit current state to the user
-        socket.emit('gameState', {
-            lobbyId,
-            lang: lobby.lang,
-            creatorId: lobby.creatorId,
-            players: lobby.players,
-            grid: lobby.grid,
-            status: lobby.status,
-            winner: lobby.winner,
-            gridSize: lobby.gridSize
-        });
+        if (existingPlayerId) {
+            // If an existing player rejoined, their IDs changed in the grid, so we must send full gameState to everyone
+            io.to(lobbyId).emit('gameState', {
+                lobbyId,
+                lang: lobby.lang,
+                creatorId: lobby.creatorId,
+                players: lobby.players,
+                grid: lobby.grid,
+                status: lobby.status,
+                winner: lobby.winner,
+                gridSize: lobby.gridSize
+            });
+        } else {
+            // Emit current state only to the new user
+            socket.emit('gameState', {
+                lobbyId,
+                lang: lobby.lang,
+                creatorId: lobby.creatorId,
+                players: lobby.players,
+                grid: lobby.grid,
+                status: lobby.status,
+                winner: lobby.winner,
+                gridSize: lobby.gridSize
+            });
 
-        // Broadcast to others that someone joined
-        socket.to(lobbyId).emit('playersUpdate', lobby.players);
+            // Broadcast to others that someone joined
+            socket.to(lobbyId).emit('playersUpdate', lobby.players);
+        }
     }
 
     socket.on('toggleSquare', (index) => {
