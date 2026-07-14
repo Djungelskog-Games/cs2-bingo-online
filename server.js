@@ -5,7 +5,10 @@ const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+const io = new Server(server, {
+    pingTimeout: 7200000, // 2 hours in milliseconds
+    pingInterval: 25000   // 25 seconds (default)
+});
 
 // Serve static files from the current directory
 app.use(express.static(__dirname));
