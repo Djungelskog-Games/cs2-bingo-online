@@ -33,12 +33,13 @@ const PLAYER_COLORS = [
     "#FF5733", "#33C1FF", "#8A2BE2", "#32CD32", "#FF1493", "#FFA500", "#00CED1", "#FFD700"
 ];
 
-function generateGrid(lang, customChallenges) {
+function generateGrid(lang, customChallenges, sabotageEnabled) {
     let sourceList = lang === 'en' ? defaultItemsEn : defaultItemsPt;
     if (customChallenges && Array.isArray(customChallenges) && customChallenges.length > 0) {
         sourceList = customChallenges;
     }
     const freeText = lang === 'en' ? "FREE" : "FREE";
+    const sabotageText = lang === 'en' ? "SABOTAGE" : "SABOTAGEM";
     
     // We need 48 items to fill a 7x7 board with 1 free space
     let expandedLines = [];
@@ -53,9 +54,13 @@ function generateGrid(lang, customChallenges) {
     let itemIdx = 0;
     for (let i = 0; i < 49; i++) {
         if (i === 24) {
-            grid.push({ id: i, text: freeText, isFree: true, claimedBy: null });
+            if (sabotageEnabled) {
+                grid.push({ id: i, text: sabotageText, isFree: false, isSabotage: true, claimedBy: null });
+            } else {
+                grid.push({ id: i, text: freeText, isFree: true, isSabotage: false, claimedBy: null });
+            }
         } else {
-            grid.push({ id: i, text: shuffled[itemIdx], isFree: false, claimedBy: null });
+            grid.push({ id: i, text: shuffled[itemIdx], isFree: false, isSabotage: false, claimedBy: null });
             itemIdx++;
         }
     }
@@ -67,15 +72,17 @@ function generateLobbyId() {
 }
 
 io.on('connection', (socket) => {
-    socket.on('createLobby', ({ name, lang, customChallenges }) => {
+    socket.on('createLobby', ({ name, lang, customChallenges, sabotageEnabled }) => {
         const lobbyId = generateLobbyId();
         lobbies[lobbyId] = {
             status: 'playing',
             lang: lang || 'pt',
             creatorId: socket.id,
             customChallenges: customChallenges || null,
+            sabotageEnabled: sabotageEnabled || false,
+            colorIndex: 0,
             players: {},
-            grid: generateGrid(lang || 'pt', customChallenges),
+            grid: generateGrid(lang || 'pt', customChallenges, sabotageEnabled),
             winner: null
         };
         
@@ -95,7 +102,13 @@ io.on('connection', (socket) => {
         socket.join(lobbyId);
         
         const lobby = lobbies[lobbyId];
-        const color = PLAYER_COLORS[Object.keys(lobby.players).length % PLAYER_COLORS.length];
+        const usedColors = Object.values(lobby.players).map(p => p.color);
+        let color = PLAYER_COLORS.find(c => !usedColors.includes(c));
+        
+        if (!color) {
+            color = PLAYER_COLORS[lobby.colorIndex % PLAYER_COLORS.length];
+        }
+        lobby.colorIndex++;
         
         lobby.players[socket.id] = { id: socket.id, name: name || 'Player', color: color };
         socket.lobbyId = lobbyId;
@@ -123,7 +136,7 @@ io.on('connection', (socket) => {
         if (lobby.status !== 'playing') return;
         
         const cell = lobby.grid[index];
-        if (cell.isFree) return;
+        if (cell.isFree && !cell.isSabotage) return;
         
         if (cell.claimedBy === socket.id) {
             // Deselect
@@ -147,7 +160,7 @@ io.on('connection', (socket) => {
         const lobby = lobbies[lobbyId];
         if (lobby.creatorId !== socket.id) return; // Only creator can reroll
         
-        lobby.grid = generateGrid(lobby.lang, lobby.customChallenges);
+        lobby.grid = generateGrid(lobby.lang, lobby.customChallenges, lobby.sabotageEnabled);
         lobby.status = 'playing';
         lobby.winner = null;
         
@@ -296,8 +309,8 @@ io.on('connection', (socket) => {
             return;
         }
 
-        // 3. Impossible for others to win
-        if (leaders.length === 1 && totalClaimed > 0) {
+        // 3. Impossible for others to win (only applies if there's more than 1 player)
+        if (Object.keys(lobby.players).length > 1 && leaders.length === 1 && totalClaimed > 0) {
             const leader = leaders[0];
             let anyoneElseCanWin = false;
 

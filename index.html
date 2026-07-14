@@ -31,7 +31,8 @@
         <div class="board-container">
             <div class="grid" id="bingo-grid">
             </div>
-            <div id="board-counter" style="margin-top: 15px; font-size: 1.2rem; color: var(--text-muted); font-family: var(--font-display); font-weight: 600; letter-spacing: 1px;">
+            <div id="board-counter"
+                style="margin-top: 15px; font-size: 1.2rem; color: var(--text-muted); font-family: var(--font-display); font-weight: 600; letter-spacing: 1px;">
                 0/48 SQUARES OCCUPIED
             </div>
         </div>
@@ -40,27 +41,50 @@
         <div class="sidebar">
             <div class="panel-section">
                 <h2 data-translate="lobby_info">Lobby Info</h2>
-                <div style="background: var(--bg-darker); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color);">
-                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 5px;">ID DO LOBBY / LOBBY ID:</p>
-                    <h3 id="current-lobby-id" style="color: var(--primary); font-size: 1.8rem; letter-spacing: 2px; text-transform: uppercase;">----</h3>
+                <div
+                    style="background: var(--bg-darker); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color);">
+                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 5px;">ID DO LOBBY / LOBBY ID:
+                    </p>
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                        <h3 id="current-lobby-id"
+                            style="color: var(--primary); font-size: 1.8rem; letter-spacing: 2px; text-transform: uppercase; margin: 0;">
+                            ----</h3>
+                        <button class="btn btn-secondary" id="copy-lobby-id-btn"
+                            style="padding: 8px; margin: 0; min-height: auto; width: auto; flex-shrink: 0; display: flex; align-items: center; justify-content: center;"
+                            title="Copiar ID / Copy ID">
+                            <svg class="copy-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                            </svg>
+                            <svg class="check-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+                                style="display: none; color: var(--primary);">
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
             </div>
 
             <div class="panel-section">
                 <h2 data-translate="players">Players</h2>
-                <div id="players-list" style="background: var(--bg-darker); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 10px; min-height: 200px;">
+                <div id="players-list"
+                    style="background: var(--bg-darker); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 10px; min-height: 200px;">
                     <!-- Players will be inserted here -->
                 </div>
             </div>
 
             <button class="btn" id="reroll-btn" style="width: 100%; display: none; margin-top: 10px;">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                    stroke-linecap="round" stroke-linejoin="round">
                     <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
                 </svg>
                 <span data-translate="reroll_game">Novo Jogo / Reroll</span>
             </button>
             <button class="btn btn-secondary" id="leave-lobby-btn" style="width: 100%; margin-top: 10px;">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 5px; vertical-align: middle;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                    stroke-linecap="round" stroke-linejoin="round" style="margin-right: 5px; vertical-align: middle;">
                     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
                 </svg>
                 <span data-translate="leave_lobby">Sair do Lobby</span>
@@ -71,30 +95,74 @@
     <!--lobby overlay-->
     <div class="overlay active" id="lobby-overlay" style="z-index: 200; background-color: var(--bg-darker);">
         <div class="win-modal" style="max-width: 350px;">
-            <div class="win-title" style="font-size: 2.5rem; margin-bottom: 20px;">ENTRAR / JOIN</div>
-            <input type="text" id="player-name" placeholder="Teu Nome / Your Name" style="margin-bottom: 15px; width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-darker); color: var(--text-light); font-family: var(--font-body); font-size: 1rem; outline: none;">
-            <input type="text" id="lobby-id-input" placeholder="ID do Lobby / Lobby ID (Para Entrar)" style="margin-bottom: 15px; width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-darker); color: var(--text-light); font-family: var(--font-body); font-size: 1rem; text-transform: uppercase; outline: none;">
-            
-            <button class="btn" id="join-lobby-btn" style="width: 100%; margin-bottom: 10px;">
-                <span data-translate="join_lobby">Entrar no Lobby</span>
-            </button>
-            
-            <div style="margin: 20px 0; border-top: 1px solid var(--border-color); padding-top: 20px;">
-                <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 8px; text-align: left;" data-translate="custom_challenges_info">Desafios Customizados (Apenas ao Criar Lobby):</p>
-                <textarea id="custom-items-input" placeholder="Escreve um desafio por linha, ou deixa vazio para os originais..." style="width: 100%; height: 80px; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-darker); color: var(--text-light); font-family: var(--font-body); font-size: 0.9rem; outline: none; resize: vertical; margin-bottom: 10px;"></textarea>
-                
-                <label for="custom-file-loader" class="btn btn-secondary" style="width: 100%; font-size: 0.9rem; padding: 8px; cursor: pointer; margin-bottom: 15px;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 5px;">
+            <!-- Main Menu -->
+            <div id="main-menu-section">
+                <div class="win-title" style="font-size: 2.5rem; margin-bottom: 20px;">LOBBY</div>
+
+                <button class="btn" id="show-join-btn" style="width: 100%; margin-bottom: 10px;">
+                    <span data-translate="join_menu_btn">Entrar num Lobby</span>
+                </button>
+                <button class="btn btn-secondary" id="show-create-btn" style="width: 100%;">
+                    <span data-translate="create_menu_btn">Criar Lobby</span>
+                </button>
+            </div>
+
+            <!-- Join Lobby Menu -->
+            <div id="join-menu-section" style="display: none;">
+                <div class="win-title" style="font-size: 2rem; margin-bottom: 20px;" data-translate="join_lobby">Entrar
+                    no Lobby</div>
+                <input type="text" id="join-player-name" placeholder="Nome / Name"
+                    style="margin-bottom: 15px; width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-darker); color: var(--text-light); font-family: var(--font-body); font-size: 1rem; outline: none;">
+                <input type="text" id="lobby-id-input" placeholder="ID do Lobby / Lobby ID"
+                    style="margin-bottom: 15px; width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-darker); color: var(--text-light); font-family: var(--font-body); font-size: 1rem; text-transform: uppercase; outline: none;">
+
+                <button class="btn" id="join-lobby-btn" style="width: 100%; margin-bottom: 10px;">
+                    <span data-translate="join_lobby">Entrar no Lobby</span>
+                </button>
+                <button class="btn btn-secondary back-btn" style="width: 100%;">
+                    <span data-translate="back_btn">Voltar</span>
+                </button>
+            </div>
+
+            <!-- Create Lobby Menu -->
+            <div id="create-menu-section" style="display: none;">
+                <div class="win-title" style="font-size: 2rem; margin-bottom: 15px;" data-translate="create_lobby">Criar
+                    Novo Lobby</div>
+                <input type="text" id="create-player-name" placeholder="Teu Nome / Your Name"
+                    style="margin-bottom: 15px; width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-darker); color: var(--text-light); font-family: var(--font-body); font-size: 1rem; outline: none;">
+
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 8px; text-align: left;"
+                    data-translate="custom_challenges_info">Desafios Customizados:</p>
+                <textarea id="custom-items-input"
+                    placeholder="Escreve um desafio por linha, ou deixa vazio para os originais..."
+                    style="width: 100%; height: 80px; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-darker); color: var(--text-light); font-family: var(--font-body); font-size: 0.9rem; outline: none; resize: vertical; margin-bottom: 10px;"></textarea>
+
+                <label for="custom-file-loader" class="btn btn-secondary"
+                    style="width: 100%; font-size: 0.9rem; padding: 8px; cursor: pointer; margin-bottom: 15px;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round" style="margin-right: 5px;">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" />
                     </svg>
                     <span data-translate="upload_file">Carregar Ficheiro .txt</span>
                 </label>
                 <input type="file" id="custom-file-loader" accept=".txt" style="display: none;">
-                
-                <button class="btn btn-secondary" id="create-lobby-btn" style="width: 100%;">
+
+                <div style="display: flex; align-items: center; justify-content: flex-start; margin-bottom: 15px;">
+                    <input type="checkbox" id="sabotage-checkbox"
+                        style="width: 18px; height: 18px; cursor: pointer; margin-right: 8px;">
+                    <label for="sabotage-checkbox"
+                        style="cursor: pointer; font-size: 0.95rem; color: var(--text-light);"
+                        data-translate="enable_sabotage">Ativar Sabotagem / Enable Sabotage</label>
+                </div>
+
+                <button class="btn btn-secondary" id="create-lobby-btn" style="width: 100%; margin-bottom: 10px;">
                     <span data-translate="create_lobby">Criar Novo Lobby</span>
                 </button>
+                <button class="btn btn-secondary back-btn" style="width: 100%;">
+                    <span data-translate="back_btn">Voltar</span>
+                </button>
             </div>
+
             <p id="lobby-error" style="color: #ff5757; margin-top: 15px; font-size: 0.9rem; display: none;"></p>
         </div>
     </div>

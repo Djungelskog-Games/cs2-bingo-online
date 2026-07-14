@@ -8,14 +8,20 @@ const translations = {
         join_lobby: "Entrar no Lobby",
         create_lobby: "Criar Novo Lobby",
         reroll_game: "Novo Jogo (Baralhar)",
-        win_congrats: "BINGO! O jogo terminou!",
+        win_congrats: "O jogo terminou!",
+        winner: "Vencedor:",
         continue_playing: "Voltar ao Lobby",
         free_space: "FREE",
         custom_challenges_info: "Desafios Customizados (Apenas ao Criar Lobby):",
         upload_file: "Carregar Ficheiro .txt",
         squares_occupied: "QUADRADOS OCUPADOS",
         lobby_closed: "O dono do lobby saiu. O lobby foi fechado.",
-        leave_lobby: "Sair do Lobby"
+        leave_lobby: "Sair do Lobby",
+        join_menu_btn: "Entrar num Lobby",
+        create_menu_btn: "Criar Lobby",
+        back_btn: "Voltar",
+        enable_sabotage: "Ativar Sabotagem / Enable Sabotage",
+        sabotage_space: "SABOTAGEM"
     },
     en: {
         lobby_info: "Lobby Info",
@@ -23,14 +29,20 @@ const translations = {
         join_lobby: "Join Lobby",
         create_lobby: "Create New Lobby",
         reroll_game: "New Game (Reroll)",
-        win_congrats: "BINGO! The game has ended!",
+        win_congrats: "The game has ended!",
+        winner: "Winner:",
         continue_playing: "Back to Lobby",
         free_space: "FREE",
         custom_challenges_info: "Custom Challenges (Create Lobby Only):",
         upload_file: "Upload .txt File",
         squares_occupied: "SQUARES OCCUPIED",
         lobby_closed: "The lobby owner left. Lobby closed.",
-        leave_lobby: "Leave Lobby"
+        leave_lobby: "Leave Lobby",
+        join_menu_btn: "Join a Lobby",
+        create_menu_btn: "Create Lobby",
+        back_btn: "Back",
+        enable_sabotage: "Enable Sabotage",
+        sabotage_space: "SABOTAGE"
     }
 };
 
@@ -47,7 +59,8 @@ let ctx;
 let lobbyOverlay;
 let joinLobbyBtn;
 let createLobbyBtn;
-let playerNameInput;
+let joinPlayerNameInput;
+let createPlayerNameInput;
 let lobbyIdInput;
 let lobbyError;
 let currentLobbyIdDisplay;
@@ -55,6 +68,15 @@ let playersListContainer;
 let rerollBtn;
 let customItemsInput;
 let customFileLoader;
+let leaveLobbyBtn;
+let mainMenuSection;
+let joinMenuSection;
+let createMenuSection;
+let showJoinBtn;
+let showCreateBtn;
+let backBtns;
+let sabotageCheckbox;
+let copyLobbyIdBtn;
 
 // synth beep using web audio api
 let audioCtx = null;
@@ -167,11 +189,11 @@ function stopConfetti() {
 // Render grid based on server state
 function renderGrid(grid) {
     gridElement.innerHTML = '';
-    
+
     grid.forEach((cellData, index) => {
         const cell = document.createElement('div');
         cell.className = 'cell';
-        
+
         if (cellData.isFree) {
             cell.classList.add('free-space');
             cell.innerHTML = `
@@ -180,30 +202,41 @@ function renderGrid(grid) {
                     <span class="free-text">${translations[currentLang].free_space}</span>
                 </div>
             `;
+        } else if (cellData.isSabotage) {
+            cell.classList.add('sabotage-space');
+            cell.innerHTML = `
+                <div>
+                    <span class="icon" style="font-size: 2rem; display: block; margin-bottom: 5px; color: #ff5757;">💣</span>
+                    <span class="sabotage-text" style="font-weight: 800; font-family: var(--font-display); text-transform: uppercase;">${translations[currentLang].sabotage_space}</span>
+                </div>
+            `;
+            cell.addEventListener('click', () => {
+                socket.emit('toggleSquare', index);
+            });
         } else {
             cell.textContent = cellData.text;
             cell.addEventListener('click', () => {
                 socket.emit('toggleSquare', index);
             });
         }
-        
+
         if (cellData.claimedBy) {
             cell.classList.add('checked');
             const playerColor = playersList[cellData.claimedBy]?.color || '#de9b35';
             cell.style.setProperty('--player-color', playerColor);
             cell.setAttribute('data-owner-id', cellData.claimedBy);
         }
-        
+
         gridElement.appendChild(cell);
     });
-    
+
     updateCounters();
 }
 
 function updateCounters() {
     let total = 0;
     let scores = {};
-    
+
     const cells = gridElement.children;
     for (let i = 0; i < cells.length; i++) {
         const cell = cells[i];
@@ -215,13 +248,13 @@ function updateCounters() {
             }
         }
     }
-    
+
     // Update Board Counter
     const boardCounter = document.getElementById('board-counter');
     if (boardCounter) {
         boardCounter.textContent = `${total}/48 ${translations[currentLang].squares_occupied}`;
     }
-    
+
     // Update Player List scores
     Object.keys(playersList).forEach(pId => {
         const pScoreEl = document.getElementById(`score-${pId}`);
@@ -259,7 +292,7 @@ socket.on('gameState', (state) => {
     lobbyOverlay.classList.remove('active');
     currentLobbyIdDisplay.textContent = state.lobbyId;
     playersList = state.players;
-    
+
     if (state.creatorId === socket.id) {
         rerollBtn.style.display = 'flex';
     } else {
@@ -284,16 +317,16 @@ socket.on('playersUpdate', (players) => {
 socket.on('squareClaimed', ({ index, claimedBy }) => {
     const cells = gridElement.children;
     const cell = cells[index];
-    
+
     if (cell && !cell.classList.contains('checked')) {
         cell.classList.add('checked');
         const playerColor = playersList[claimedBy]?.color || '#de9b35';
         cell.style.setProperty('--player-color', playerColor);
         cell.setAttribute('data-owner-id', claimedBy);
-        
+
         // play a click sound (success)
         playSynthBeep(claimedBy === socket.id ? 523.25 : 440.00, 0.15);
-        
+
         updateCounters();
     }
 });
@@ -301,15 +334,15 @@ socket.on('squareClaimed', ({ index, claimedBy }) => {
 socket.on('squareUnclaimed', ({ index }) => {
     const cells = gridElement.children;
     const cell = cells[index];
-    
+
     if (cell && cell.classList.contains('checked')) {
         cell.classList.remove('checked');
         cell.style.removeProperty('--player-color');
         cell.removeAttribute('data-owner-id');
-        
+
         // play a deselect sound (lower pitch)
         playSynthBeep(261.63, 0.15);
-        
+
         updateCounters();
     }
 });
@@ -320,7 +353,7 @@ socket.on('squareClaimFailed', ({ index }) => {
 });
 
 socket.on('gameWon', ({ winnerId, line, winnerName }) => {
-    winOverlay.querySelector('.win-text').textContent = translations[currentLang].win_congrats + ` (${winnerName})`;
+    winOverlay.querySelector('.win-text').textContent = translations[currentLang].win_congrats + ` ${translations[currentLang].winner}` + ` ${winnerName}`;
     winOverlay.classList.add('active');
     startConfetti();
     playWinMelody();
@@ -335,7 +368,7 @@ socket.on('lobbyClosed', () => {
     lobbyOverlay.classList.add('active');
     lobbyError.textContent = translations[currentLang].lobby_closed;
     lobbyError.style.display = 'block';
-    
+
     // Also reset win overlay if open
     winOverlay.classList.remove('active');
     stopConfetti();
@@ -377,11 +410,12 @@ window.addEventListener('DOMContentLoaded', () => {
     closeWinBtn = document.getElementById('close-win-btn');
     canvas = document.getElementById('confetti-canvas');
     ctx = canvas.getContext('2d');
-    
+
     lobbyOverlay = document.getElementById('lobby-overlay');
     joinLobbyBtn = document.getElementById('join-lobby-btn');
     createLobbyBtn = document.getElementById('create-lobby-btn');
-    playerNameInput = document.getElementById('player-name');
+    joinPlayerNameInput = document.getElementById('join-player-name');
+    createPlayerNameInput = document.getElementById('create-player-name');
     lobbyIdInput = document.getElementById('lobby-id-input');
     lobbyError = document.getElementById('lobby-error');
     currentLobbyIdDisplay = document.getElementById('current-lobby-id');
@@ -390,6 +424,14 @@ window.addEventListener('DOMContentLoaded', () => {
     customItemsInput = document.getElementById('custom-items-input');
     customFileLoader = document.getElementById('custom-file-loader');
     leaveLobbyBtn = document.getElementById('leave-lobby-btn');
+    mainMenuSection = document.getElementById('main-menu-section');
+    joinMenuSection = document.getElementById('join-menu-section');
+    createMenuSection = document.getElementById('create-menu-section');
+    showJoinBtn = document.getElementById('show-join-btn');
+    showCreateBtn = document.getElementById('show-create-btn');
+    backBtns = document.querySelectorAll('.back-btn');
+    sabotageCheckbox = document.getElementById('sabotage-checkbox');
+    copyLobbyIdBtn = document.getElementById('copy-lobby-id-btn');
 
     // initialize canvas dimensions
     resizeCanvas();
@@ -402,9 +444,55 @@ window.addEventListener('DOMContentLoaded', () => {
         // window.location.reload();
     });
 
+    if (copyLobbyIdBtn) {
+        copyLobbyIdBtn.addEventListener('click', () => {
+            const lobbyId = currentLobbyIdDisplay.textContent;
+            if (!lobbyId || lobbyId === '----') return;
+
+            const copyIcon = copyLobbyIdBtn.querySelector('.copy-icon');
+            const checkIcon = copyLobbyIdBtn.querySelector('.check-icon');
+
+            navigator.clipboard.writeText(lobbyId).then(() => {
+                if (copyIcon && checkIcon) {
+                    copyIcon.style.display = 'none';
+                    checkIcon.style.display = 'block';
+                    copyLobbyIdBtn.style.borderColor = 'var(--primary)';
+
+                    setTimeout(() => {
+                        copyIcon.style.display = 'block';
+                        checkIcon.style.display = 'none';
+                        copyLobbyIdBtn.style.borderColor = '';
+                    }, 2000);
+                }
+            }).catch(err => {
+                console.error('Could not copy text: ', err);
+            });
+        });
+    }
+
+    // Menu transitions
+    showJoinBtn.addEventListener('click', () => {
+        mainMenuSection.style.display = 'none';
+        joinMenuSection.style.display = 'block';
+    });
+
+    showCreateBtn.addEventListener('click', () => {
+        mainMenuSection.style.display = 'none';
+        createMenuSection.style.display = 'block';
+    });
+
+    backBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            joinMenuSection.style.display = 'none';
+            createMenuSection.style.display = 'none';
+            mainMenuSection.style.display = 'block';
+            lobbyError.style.display = 'none';
+        });
+    });
+
     // Lobby events
     joinLobbyBtn.addEventListener('click', () => {
-        const name = playerNameInput.value.trim() || 'Player';
+        const name = joinPlayerNameInput.value.trim() || 'Player';
         const lobbyId = lobbyIdInput.value.trim();
         if (!lobbyId) {
             lobbyError.textContent = 'Insira um ID de Lobby / Enter a Lobby ID';
@@ -416,9 +504,9 @@ window.addEventListener('DOMContentLoaded', () => {
     });
 
     createLobbyBtn.addEventListener('click', () => {
-        const name = playerNameInput.value.trim() || 'Player';
+        const name = createPlayerNameInput.value.trim() || 'Player';
         lobbyError.style.display = 'none';
-        
+
         // Parse custom challenges
         let customChallenges = [];
         if (customItemsInput && customItemsInput.value.trim() !== '') {
@@ -427,7 +515,9 @@ window.addEventListener('DOMContentLoaded', () => {
                 .filter(line => line.length > 0);
         }
 
-        socket.emit('createLobby', { name, lang: currentLang, customChallenges });
+        const sabotageEnabled = sabotageCheckbox ? sabotageCheckbox.checked : false;
+
+        socket.emit('createLobby', { name, lang: currentLang, customChallenges, sabotageEnabled });
     });
 
     // Handle custom file upload
