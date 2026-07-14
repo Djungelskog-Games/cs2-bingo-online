@@ -354,6 +354,37 @@ textarea:focus {
     box-shadow: none;
 }
 
+.btn-kick {
+    background-color: rgba(220, 53, 69, 0.1);
+    color: #ff5e62;
+    border: 1px solid rgba(220, 53, 69, 0.3);
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-family: var(--font-display);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    outline: none;
+}
+
+.btn-kick:hover {
+    background-color: rgba(220, 53, 69, 0.25);
+    border-color: #ff5e62;
+    box-shadow: 0 0 8px rgba(220, 53, 69, 0.2);
+}
+
+.btn-kick.confirming {
+    background-color: #ff5e62;
+    color: #000;
+    border-color: #ff5e62;
+}
+
 .file-label {
     width: 100%;
     cursor: pointer;

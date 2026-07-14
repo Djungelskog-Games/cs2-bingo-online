@@ -209,6 +209,49 @@ io.on('connection', (socket) => {
         handleLeave(socket);
     });
 
+    socket.on('kickPlayer', (targetId) => {
+        const lobbyId = socket.lobbyId;
+        if (!lobbyId || !lobbies[lobbyId]) return;
+        const lobby = lobbies[lobbyId];
+        
+        // Only creator can kick
+        if (lobby.creatorId !== socket.id) return;
+        
+        // Cannot kick self
+        if (targetId === socket.id) return;
+        
+        if (lobby.players[targetId]) {
+            const targetSocket = io.sockets.sockets.get(targetId);
+            
+            // Remove target player from lobby data
+            delete lobby.players[targetId];
+            
+            // Release any squares claimed by the target player
+            lobby.grid.forEach(cell => {
+                if (cell.claimedBy === targetId) {
+                    cell.claimedBy = null;
+                }
+            });
+            
+            // Broadcast players update and entire grid state to remaining players
+            io.to(lobbyId).emit('gameState', {
+                lobbyId,
+                lang: lobby.lang,
+                creatorId: lobby.creatorId,
+                players: lobby.players,
+                grid: lobby.grid,
+                status: lobby.status,
+                winner: lobby.winner
+            });
+            
+            if (targetSocket) {
+                targetSocket.emit('kicked');
+                targetSocket.leave(lobbyId);
+                targetSocket.lobbyId = null;
+            }
+        }
+    });
+
     function checkWinCondition(lobbyId, socketId) {
         const lobby = lobbies[lobbyId];
         const grid = lobby.grid;

@@ -49,6 +49,7 @@ const translations = {
 let currentLang = 'pt';
 let playersList = {};
 let myId = null;
+let creatorId = null;
 
 // DOM elements
 let gridElement;
@@ -305,15 +306,56 @@ function updatePlayersList() {
         pEl.style.display = 'flex';
         pEl.style.alignItems = 'center';
         pEl.style.justifyContent = 'space-between';
+        pEl.style.margin = '5px 0';
+        
+        const isMe = player.id === socket.id;
+        const isCurrentPlayerHost = creatorId === socket.id;
+        const showKick = isCurrentPlayerHost && !isMe;
+
         pEl.innerHTML = `
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <div style="width: 15px; height: 15px; border-radius: 50%; background-color: ${player.color}; box-shadow: 0 0 5px ${player.color};"></div>
-                <span style="font-size: 1.1rem; color: var(--text-light); font-weight: 600;">${player.name} ${player.id === socket.id ? '(You)' : ''}</span>
+            <div style="display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0;">
+                <div style="width: 15px; height: 15px; border-radius: 50%; background-color: ${player.color}; box-shadow: 0 0 5px ${player.color}; flex-shrink: 0;"></div>
+                <span style="font-size: 1.1rem; color: var(--text-light); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                    ${player.name} ${isMe ? '(You)' : ''}
+                </span>
             </div>
-            <div style="font-size: 1.2rem; font-weight: 700; color: ${player.color};" id="score-${player.id}">0</div>
+            <div style="display: flex; align-items: center; gap: 12px; flex-shrink: 0;">
+                ${showKick ? `
+                    <button class="btn-kick" data-player-id="${player.id}" title="Kick Player">
+                        Kick
+                    </button>
+                ` : ''}
+                <div style="font-size: 1.2rem; font-weight: 700; color: ${player.color};" id="score-${player.id}">0</div>
+            </div>
         `;
         playersListContainer.appendChild(pEl);
     });
+
+    // Attach kick event listeners
+    const kickBtns = playersListContainer.querySelectorAll('.btn-kick');
+    kickBtns.forEach(btn => {
+        let confirmTimeout = null;
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const playerId = btn.getAttribute('data-player-id');
+            
+            if (btn.classList.contains('confirming')) {
+                // Second click: emit kick event
+                socket.emit('kickPlayer', playerId);
+                if (confirmTimeout) clearTimeout(confirmTimeout);
+            } else {
+                // First click: prompt inside button
+                btn.classList.add('confirming');
+                btn.textContent = 'Sure?';
+                
+                confirmTimeout = setTimeout(() => {
+                    btn.classList.remove('confirming');
+                    btn.textContent = 'Kick';
+                }, 3000);
+            }
+        });
+    });
+
     updateCounters();
 }
 
@@ -326,6 +368,7 @@ socket.on('gameState', (state) => {
     lobbyOverlay.classList.remove('active');
     currentLobbyIdDisplay.textContent = state.lobbyId;
     playersList = state.players;
+    creatorId = state.creatorId;
 
     if (state.creatorId === socket.id) {
         rerollBtn.style.display = 'flex';
@@ -346,6 +389,21 @@ socket.on('gameState', (state) => {
 socket.on('playersUpdate', (players) => {
     playersList = players;
     updatePlayersList();
+});
+
+socket.on('kicked', () => {
+    const errMsg = currentLang === 'pt' ? 'Foste expulso do lobby!' : 'You have been kicked from the lobby!';
+    if (lobbyError) {
+        lobbyError.textContent = errMsg;
+        lobbyError.style.display = 'block';
+    }
+    lobbyOverlay.classList.add('active');
+    winOverlay.classList.remove('active');
+    stopConfetti();
+    // Clear state
+    playersList = {};
+    myId = null;
+    creatorId = null;
 });
 
 socket.on('squareClaimed', ({ index, claimedBy }) => {
