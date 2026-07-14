@@ -83,14 +83,20 @@
                 <span data-translate="reroll_game">Novo Jogo / Reroll</span>
             </button>
             <div id="state-controls" style="display: none; gap: 10px; margin-top: 10px;">
-                <button class="btn btn-secondary" id="export-state-btn" style="flex: 1; padding: 10px 5px; font-size: 0.9rem;" title="Export Lobby State">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 5px; vertical-align: middle;">
+                <button class="btn btn-secondary" id="export-state-btn"
+                    style="flex: 1; padding: 10px 5px; font-size: 0.9rem;" title="Export Lobby State">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round"
+                        style="margin-right: 5px; vertical-align: middle;">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
                     </svg>
                     <span>Export</span>
                 </button>
-                <button class="btn btn-secondary" id="import-state-btn" style="flex: 1; padding: 10px 5px; font-size: 0.9rem;" title="Import Lobby State">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 5px; vertical-align: middle;">
+                <button class="btn btn-secondary" id="import-state-btn"
+                    style="flex: 1; padding: 10px 5px; font-size: 0.9rem;" title="Import Lobby State">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round"
+                        style="margin-right: 5px; vertical-align: middle;">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" />
                     </svg>
                     <span>Import</span>
@@ -143,7 +149,7 @@
             <div id="create-menu-section" style="display: none;">
                 <div class="win-title" style="font-size: 2rem; margin-bottom: 15px;" data-translate="create_lobby">Criar
                     Novo Lobby</div>
-                <input type="text" id="create-player-name" placeholder="Teu Nome / Your Name"
+                <input type="text" id="create-player-name" placeholder="Nome / Name"
                     style="margin-bottom: 15px; width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-darker); color: var(--text-light); font-family: var(--font-body); font-size: 1rem; outline: none;">
 
                 <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 8px; text-align: left;"
@@ -161,6 +167,16 @@
                     <span data-translate="upload_file">Carregar Ficheiro .txt</span>
                 </label>
                 <input type="file" id="custom-file-loader" accept=".txt" style="display: none;">
+
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;">
+                    <label style="color: var(--text-light); font-size: 0.95rem;" data-translate="grid_size">Tamanho /
+                        Size:</label>
+                    <select id="grid-size-select"
+                        style="padding: 8px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-darker); color: var(--text-light); font-family: var(--font-body); font-size: 0.9rem; outline: none;">
+                        <option value="5">5x5</option>
+                        <option value="7" selected>7x7</option>
+                    </select>
+                </div>
 
                 <div style="display: flex; align-items: center; justify-content: flex-start; margin-bottom: 15px;">
                     <input type="checkbox" id="sabotage-checkbox"

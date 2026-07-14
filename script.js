@@ -21,7 +21,8 @@ const translations = {
         create_menu_btn: "Criar Lobby",
         back_btn: "Voltar",
         enable_sabotage: "Ativar Sabotagem / Enable Sabotage",
-        sabotage_space: "SABOTAGEM"
+        sabotage_space: "SABOTAGEM",
+        grid_size: "Tamanho / Size:"
     },
     en: {
         lobby_info: "Lobby Info",
@@ -42,7 +43,8 @@ const translations = {
         create_menu_btn: "Create Lobby",
         back_btn: "Back",
         enable_sabotage: "Enable Sabotage",
-        sabotage_space: "SABOTAGE"
+        sabotage_space: "SABOTAGE",
+        grid_size: "Board Size:"
     }
 };
 
@@ -83,6 +85,7 @@ let showCreateBtn;
 let backBtns;
 let sabotageCheckbox;
 let copyLobbyIdBtn;
+let gridSizeSelect;
 
 // synth beep using web audio api
 let audioCtx = null;
@@ -193,8 +196,11 @@ function stopConfetti() {
 }
 
 // Render grid based on server state
-function renderGrid(grid) {
+function renderGrid(grid, gridSize = 7) {
     gridElement.innerHTML = '';
+
+    gridElement.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
+    gridElement.style.gridTemplateRows = `repeat(${gridSize}, 1fr)`;
 
     grid.forEach((cellData, index) => {
         const cell = document.createElement('div');
@@ -289,10 +295,13 @@ function updateCounters() {
         }
     }
 
+    // Calculate max squares dynamically from grid elements
+    const maxSquares = Array.from(gridElement.children).filter(cell => !cell.classList.contains('free-space')).length;
+
     // Update Board Counter
     const boardCounter = document.getElementById('board-counter');
     if (boardCounter) {
-        boardCounter.textContent = `${total}/48 ${translations[currentLang].squares_occupied}`;
+        boardCounter.textContent = `${total}/${maxSquares} ${translations[currentLang].squares_occupied}`;
     }
 
     // Update Player List scores
@@ -391,7 +400,7 @@ socket.on('gameState', (state) => {
     }
 
     updatePlayersList();
-    renderGrid(state.grid);
+    renderGrid(state.grid, state.gridSize);
 });
 
 socket.on('playersUpdate', (players) => {
@@ -551,6 +560,7 @@ window.addEventListener('DOMContentLoaded', () => {
     backBtns = document.querySelectorAll('.back-btn');
     sabotageCheckbox = document.getElementById('sabotage-checkbox');
     copyLobbyIdBtn = document.getElementById('copy-lobby-id-btn');
+    gridSizeSelect = document.getElementById('grid-size-select');
 
     // initialize canvas dimensions
     resizeCanvas();
@@ -636,8 +646,9 @@ window.addEventListener('DOMContentLoaded', () => {
         }
 
         const sabotageEnabled = sabotageCheckbox ? sabotageCheckbox.checked : false;
+        const gridSize = gridSizeSelect ? parseInt(gridSizeSelect.value) : 7;
 
-        socket.emit('createLobby', { name, lang: currentLang, customChallenges, sabotageEnabled });
+        socket.emit('createLobby', { name, lang: currentLang, customChallenges, sabotageEnabled, gridSize });
     });
 
     // Handle custom file upload

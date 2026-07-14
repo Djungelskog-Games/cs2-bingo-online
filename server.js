@@ -33,7 +33,7 @@ const PLAYER_COLORS = [
     "#FF5733", "#33C1FF", "#8A2BE2", "#32CD32", "#FF1493", "#FFA500", "#00CED1", "#FFD700"
 ];
 
-function generateGrid(lang, customChallenges, sabotageEnabled) {
+function generateGrid(lang, customChallenges, sabotageEnabled, gridSize = 7) {
     let sourceList = lang === 'en' ? defaultItemsEn : defaultItemsPt;
     if (customChallenges && Array.isArray(customChallenges) && customChallenges.length > 0) {
         sourceList = customChallenges;
@@ -41,19 +41,22 @@ function generateGrid(lang, customChallenges, sabotageEnabled) {
     const freeText = lang === 'en' ? "FREE" : "FREE";
     const sabotageText = lang === 'en' ? "SABOTAGE" : "SABOTAGEM";
     
-    // We need 48 items to fill a 7x7 board with 1 free space
+    const totalCells = gridSize * gridSize;
+    const centerIdx = Math.floor(totalCells / 2);
+    
+    // We need (totalCells - 1) items to fill a board with 1 free space
     let expandedLines = [];
-    while (expandedLines.length < 48) {
+    while (expandedLines.length < totalCells - 1) {
         expandedLines = expandedLines.concat(sourceList);
     }
     
     // Shuffle
-    const shuffled = expandedLines.slice(0, 48).sort(() => Math.random() - 0.5);
+    const shuffled = expandedLines.slice(0, totalCells - 1).sort(() => Math.random() - 0.5);
     
     const grid = [];
     let itemIdx = 0;
-    for (let i = 0; i < 49; i++) {
-        if (i === 24) {
+    for (let i = 0; i < totalCells; i++) {
+        if (i === centerIdx) {
             if (sabotageEnabled) {
                 grid.push({ id: i, text: sabotageText, isFree: false, isSabotage: true, claimedBy: null });
             } else {
@@ -72,17 +75,19 @@ function generateLobbyId() {
 }
 
 io.on('connection', (socket) => {
-    socket.on('createLobby', ({ name, lang, customChallenges, sabotageEnabled }) => {
+    socket.on('createLobby', ({ name, lang, customChallenges, sabotageEnabled, gridSize }) => {
         const lobbyId = generateLobbyId();
+        const size = gridSize || 7;
         lobbies[lobbyId] = {
             status: 'playing',
             lang: lang || 'pt',
             creatorId: socket.id,
             customChallenges: customChallenges || null,
             sabotageEnabled: sabotageEnabled || false,
+            gridSize: size,
             colorIndex: 0,
             players: {},
-            grid: generateGrid(lang || 'pt', customChallenges, sabotageEnabled),
+            grid: generateGrid(lang || 'pt', customChallenges, sabotageEnabled, size),
             winner: null
         };
         
@@ -147,7 +152,8 @@ io.on('connection', (socket) => {
             players: lobby.players,
             grid: lobby.grid,
             status: lobby.status,
-            winner: lobby.winner
+            winner: lobby.winner,
+            gridSize: lobby.gridSize
         });
 
         // Broadcast to others that someone joined
@@ -186,7 +192,7 @@ io.on('connection', (socket) => {
         const lobby = lobbies[lobbyId];
         if (lobby.creatorId !== socket.id) return; // Only creator can reroll
         
-        lobby.grid = generateGrid(lobby.lang, lobby.customChallenges, lobby.sabotageEnabled);
+        lobby.grid = generateGrid(lobby.lang, lobby.customChallenges, lobby.sabotageEnabled, lobby.gridSize);
         lobby.status = 'playing';
         lobby.winner = null;
         
@@ -198,7 +204,8 @@ io.on('connection', (socket) => {
             players: lobby.players,
             grid: lobby.grid,
             status: lobby.status,
-            winner: lobby.winner
+            winner: lobby.winner,
+            gridSize: lobby.gridSize
         });
     });
 
@@ -213,6 +220,7 @@ io.on('connection', (socket) => {
             lobby.grid = importedState.grid;
             lobby.status = importedState.status || 'playing';
             lobby.winner = importedState.winner || null;
+            lobby.gridSize = importedState.gridSize || Math.sqrt(importedState.grid.length);
             
             const currentPlayers = { ...lobby.players };
             lobby.players = { ...importedState.players };
@@ -250,7 +258,8 @@ io.on('connection', (socket) => {
                 players: lobby.players,
                 grid: lobby.grid,
                 status: lobby.status,
-                winner: lobby.winner
+                winner: lobby.winner,
+                gridSize: lobby.gridSize
             });
         }
     });
@@ -316,7 +325,8 @@ io.on('connection', (socket) => {
                 players: lobby.players,
                 grid: lobby.grid,
                 status: lobby.status,
-                winner: lobby.winner
+                winner: lobby.winner,
+                gridSize: lobby.gridSize
             });
             
             if (targetSocket) {
@@ -332,8 +342,7 @@ io.on('connection', (socket) => {
         const grid = lobby.grid;
         const winLines = [];
 
-        // 7x7 logic
-        const SIZE = 7;
+        const SIZE = lobby.gridSize || 7;
         
         // horizontal
         for (let r = 0; r < SIZE; r++) {
@@ -380,21 +389,25 @@ io.on('connection', (socket) => {
         });
 
         let totalClaimed = 0;
-        const CLAIMABLE_SQUARES = 48; // 49 - 1 free space
+        let claimableSquaresCount = 0;
         
         for (let i = 0; i < grid.length; i++) {
-            if (!grid[i].isFree && grid[i].claimedBy !== null) {
-                totalClaimed++;
-                const pId = grid[i].claimedBy;
-                if (claimedCountByPlayer[pId] !== undefined) {
-                    claimedCountByPlayer[pId]++;
-                } else {
-                    claimedCountByPlayer[pId] = 1;
+            if (!grid[i].isFree) {
+                claimableSquaresCount++;
+                if (grid[i].claimedBy !== null) {
+                    totalClaimed++;
+                    const pId = grid[i].claimedBy;
+                    if (claimedCountByPlayer[pId] !== undefined) {
+                        claimedCountByPlayer[pId]++;
+                    } else {
+                        claimedCountByPlayer[pId] = 1;
+                    }
                 }
             }
         }
 
-        const remainingSquares = CLAIMABLE_SQUARES - totalClaimed;
+        const remainingSquares = claimableSquaresCount - totalClaimed;
+        const MAJORITY_WIN = Math.floor(claimableSquaresCount / 2) + 1;
 
         let maxClaims = 0;
         let leaders = [];
@@ -409,8 +422,8 @@ io.on('connection', (socket) => {
 
         if (leaders.length === 0) return;
 
-        // 1. Majority Win (25 or more out of 48)
-        if (maxClaims >= 25) {
+        // 1. Majority Win
+        if (maxClaims >= MAJORITY_WIN) {
             const winner = leaders[0];
             lobby.status = 'finished';
             lobby.winner = winner;
@@ -437,7 +450,7 @@ io.on('connection', (socket) => {
 
                 // Check if pId can win by squares
                 const possibleScore = claimedCountByPlayer[pId] + remainingSquares;
-                let canWinBySquares = (possibleScore >= maxClaims) || (possibleScore >= 25);
+                let canWinBySquares = (possibleScore >= maxClaims) || (possibleScore >= MAJORITY_WIN);
 
                 // Check if pId can win by line
                 let canWinByLine = false;
