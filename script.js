@@ -214,7 +214,13 @@ function renderGrid(grid) {
                 socket.emit('toggleSquare', index);
             });
         } else {
-            cell.textContent = cellData.text;
+            const wrapper = document.createElement('div');
+            wrapper.className = 'cell-text-wrapper';
+            const content = document.createElement('div');
+            content.className = 'cell-text-content';
+            content.textContent = cellData.text;
+            wrapper.appendChild(content);
+            cell.appendChild(wrapper);
             cell.addEventListener('click', () => {
                 socket.emit('toggleSquare', index);
             });
@@ -231,6 +237,34 @@ function renderGrid(grid) {
     });
 
     updateCounters();
+    setTimeout(setupCellOverflows, 50);
+}
+
+function setupCellOverflows() {
+    if (!gridElement) return;
+    const cells = gridElement.querySelectorAll('.cell');
+    cells.forEach(cell => {
+        const wrapper = cell.querySelector('.cell-text-wrapper');
+        const content = cell.querySelector('.cell-text-content');
+        if (!wrapper || !content) return;
+
+        // Reset inline styles and classes
+        wrapper.classList.remove('overflowing');
+        cell.classList.remove('cell-overflow');
+        content.style.transform = '';
+        cell.style.removeProperty('--translate-y');
+
+        const containerHeight = wrapper.clientHeight;
+        const contentHeight = content.scrollHeight;
+
+        if (contentHeight > containerHeight) {
+            wrapper.classList.add('overflowing');
+            cell.classList.add('cell-overflow');
+            const scrollDistance = contentHeight - containerHeight;
+            // set negative translate value with 4px safety padding
+            cell.style.setProperty('--translate-y', `-${scrollDistance + 4}px`);
+        }
+    });
 }
 
 function updateCounters() {
@@ -436,6 +470,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // initialize canvas dimensions
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
+    window.addEventListener('resize', setupCellOverflows);
 
     closeWinBtn.addEventListener('click', () => {
         winOverlay.classList.remove('active');
