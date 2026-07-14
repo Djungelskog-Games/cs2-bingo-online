@@ -102,15 +102,41 @@ io.on('connection', (socket) => {
         socket.join(lobbyId);
         
         const lobby = lobbies[lobbyId];
-        const usedColors = Object.values(lobby.players).map(p => p.color);
-        let color = PLAYER_COLORS.find(c => !usedColors.includes(c));
+        const playerName = name || 'Player';
         
-        if (!color) {
-            color = PLAYER_COLORS[lobby.colorIndex % PLAYER_COLORS.length];
+        let existingPlayerId = null;
+        for (const [pId, pData] of Object.entries(lobby.players)) {
+            if (pData.name === playerName) {
+                existingPlayerId = pId;
+                break;
+            }
         }
-        lobby.colorIndex++;
         
-        lobby.players[socket.id] = { id: socket.id, name: name || 'Player', color: color };
+        let color;
+        if (existingPlayerId) {
+            color = lobby.players[existingPlayerId].color;
+            delete lobby.players[existingPlayerId];
+            
+            lobby.grid.forEach(cell => {
+                if (cell.claimedBy === existingPlayerId) {
+                    cell.claimedBy = socket.id;
+                }
+            });
+            
+            if (lobby.winner === existingPlayerId) {
+                lobby.winner = socket.id;
+            }
+        } else {
+            const usedColors = Object.values(lobby.players).map(p => p.color);
+            color = PLAYER_COLORS.find(c => !usedColors.includes(c));
+            
+            if (!color) {
+                color = PLAYER_COLORS[lobby.colorIndex % PLAYER_COLORS.length];
+            }
+            lobby.colorIndex++;
+        }
+        
+        lobby.players[socket.id] = { id: socket.id, name: playerName, color: color };
         socket.lobbyId = lobbyId;
 
         // Emit current state to the user
@@ -176,6 +202,59 @@ io.on('connection', (socket) => {
         });
     });
 
+    socket.on('importState', (importedState) => {
+        const lobbyId = socket.lobbyId;
+        if (!lobbyId || !lobbies[lobbyId] || !importedState) return;
+        
+        const lobby = lobbies[lobbyId];
+        if (lobby.creatorId !== socket.id) return; // Only creator can import
+        
+        if (importedState.grid && importedState.players) {
+            lobby.grid = importedState.grid;
+            lobby.status = importedState.status || 'playing';
+            lobby.winner = importedState.winner || null;
+            
+            const currentPlayers = { ...lobby.players };
+            lobby.players = { ...importedState.players };
+            
+            for (const [currentId, currentData] of Object.entries(currentPlayers)) {
+                let foundImportedId = null;
+                for (const [impId, impData] of Object.entries(lobby.players)) {
+                    if (impData.name === currentData.name) {
+                        foundImportedId = impId;
+                        break;
+                    }
+                }
+                
+                if (foundImportedId) {
+                    lobby.grid.forEach(cell => {
+                        if (cell.claimedBy === foundImportedId) {
+                            cell.claimedBy = currentId;
+                        }
+                    });
+                    if (lobby.winner === foundImportedId) {
+                        lobby.winner = currentId;
+                    }
+                    const colorToKeep = lobby.players[foundImportedId].color;
+                    delete lobby.players[foundImportedId];
+                    lobby.players[currentId] = { ...currentData, color: colorToKeep };
+                } else {
+                    lobby.players[currentId] = currentData;
+                }
+            }
+            
+            io.to(lobbyId).emit('gameState', {
+                lobbyId,
+                lang: lobby.lang,
+                creatorId: lobby.creatorId,
+                players: lobby.players,
+                grid: lobby.grid,
+                status: lobby.status,
+                winner: lobby.winner
+            });
+        }
+    });
+
     function handleLeave(socket) {
         const lobbyId = socket.lobbyId;
         if (lobbyId && lobbies[lobbyId]) {
@@ -185,14 +264,10 @@ io.on('connection', (socket) => {
                 socket.to(lobbyId).emit('lobbyClosed');
                 delete lobbies[lobbyId];
             } else {
-                delete lobby.players[socket.id];
-                
-                if (Object.keys(lobby.players).length === 0) {
-                    // Delete empty lobby after some time or immediately
-                    delete lobbies[lobbyId];
-                } else {
-                    io.to(lobbyId).emit('playersUpdate', lobby.players);
+                if (lobby.players[socket.id]) {
+                    lobby.players[socket.id].connected = false;
                 }
+                io.to(lobbyId).emit('playersUpdate', lobby.players);
             }
         }
         if (lobbyId) {

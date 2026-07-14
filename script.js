@@ -50,6 +50,7 @@ let currentLang = 'pt';
 let playersList = {};
 let myId = null;
 let creatorId = null;
+let currentState = null;
 
 // DOM elements
 let gridElement;
@@ -67,6 +68,10 @@ let lobbyError;
 let currentLobbyIdDisplay;
 let playersListContainer;
 let rerollBtn;
+let stateControls;
+let exportStateBtn;
+let importStateBtn;
+let stateFileInput;
 let customItemsInput;
 let customFileLoader;
 let leaveLobbyBtn;
@@ -369,11 +374,14 @@ socket.on('gameState', (state) => {
     currentLobbyIdDisplay.textContent = state.lobbyId;
     playersList = state.players;
     creatorId = state.creatorId;
+    currentState = state;
 
     if (state.creatorId === socket.id) {
         rerollBtn.style.display = 'flex';
+        stateControls.style.display = 'flex';
     } else {
         rerollBtn.style.display = 'none';
+        stateControls.style.display = 'none';
     }
 
     // if game was restarted, we should clear the win overlay if active
@@ -388,6 +396,9 @@ socket.on('gameState', (state) => {
 
 socket.on('playersUpdate', (players) => {
     playersList = players;
+    if (currentState) {
+        currentState.players = players;
+    }
     updatePlayersList();
 });
 
@@ -416,6 +427,10 @@ socket.on('squareClaimed', ({ index, claimedBy }) => {
         cell.style.setProperty('--player-color', playerColor);
         cell.setAttribute('data-owner-id', claimedBy);
 
+        if (currentState && currentState.grid[index]) {
+            currentState.grid[index].claimedBy = claimedBy;
+        }
+
         // play a click sound (success)
         playSynthBeep(claimedBy === socket.id ? 523.25 : 440.00, 0.15);
 
@@ -432,6 +447,10 @@ socket.on('squareUnclaimed', ({ index }) => {
         cell.style.removeProperty('--player-color');
         cell.removeAttribute('data-owner-id');
 
+        if (currentState && currentState.grid[index]) {
+            currentState.grid[index].claimedBy = null;
+        }
+
         // play a deselect sound (lower pitch)
         playSynthBeep(261.63, 0.15);
 
@@ -445,6 +464,10 @@ socket.on('squareClaimFailed', ({ index }) => {
 });
 
 socket.on('gameWon', ({ winnerId, line, winnerName }) => {
+    if (currentState) {
+        currentState.winner = winnerId;
+        currentState.status = 'finished';
+    }
     winOverlay.querySelector('.win-text').textContent = translations[currentLang].win_congrats + ` ${translations[currentLang].winner}` + ` ${winnerName}`;
     winOverlay.classList.add('active');
     startConfetti();
@@ -513,6 +536,10 @@ window.addEventListener('DOMContentLoaded', () => {
     currentLobbyIdDisplay = document.getElementById('current-lobby-id');
     playersListContainer = document.getElementById('players-list');
     rerollBtn = document.getElementById('reroll-btn');
+    stateControls = document.getElementById('state-controls');
+    exportStateBtn = document.getElementById('export-state-btn');
+    importStateBtn = document.getElementById('import-state-btn');
+    stateFileInput = document.getElementById('state-file-input');
     customItemsInput = document.getElementById('custom-items-input');
     customFileLoader = document.getElementById('custom-file-loader');
     leaveLobbyBtn = document.getElementById('leave-lobby-btn');
@@ -629,6 +656,44 @@ window.addEventListener('DOMContentLoaded', () => {
     rerollBtn.addEventListener('click', () => {
         socket.emit('rerollLobby');
     });
+
+    if (exportStateBtn) {
+        exportStateBtn.addEventListener('click', () => {
+            if (!currentState) return;
+            const stateStr = JSON.stringify(currentState, null, 2);
+            const blob = new Blob([stateStr], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `cs2-bingo-state-${currentState.lobbyId}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+    }
+
+    if (importStateBtn && stateFileInput) {
+        importStateBtn.addEventListener('click', () => {
+            stateFileInput.click();
+        });
+
+        stateFileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                try {
+                    const importedState = JSON.parse(evt.target.result);
+                    socket.emit('importState', importedState);
+                } catch (err) {
+                    console.error('Invalid JSON file', err);
+                }
+            };
+            reader.readAsText(file);
+            
+            e.target.value = ''; // Reset input
+        });
+    }
 
     leaveLobbyBtn.addEventListener('click', () => {
         socket.emit('leaveLobby');
